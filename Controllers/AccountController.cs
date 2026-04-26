@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text;
 using ExamSystem.Data;
 using ExamSystem.Models;
 using ExamSystem.Services;
@@ -15,12 +16,10 @@ namespace ExamSystem.Controllers
     public class AccountController : Controller
     {
         private readonly ExamDbContext _db;
-        private readonly IEmailSender _emailSender;
 
         public AccountController(ExamDbContext db, IEmailSender emailSender)
         {
             _db = db;
-            _emailSender = emailSender;
         }
 
         [HttpGet]
@@ -39,24 +38,23 @@ namespace ExamSystem.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = await _db.Users
-                .FirstOrDefaultAsync(u => u.Username == model.Username);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == model.Username);
 
             if (user == null || !BC.Verify(model.Password, user.PasswordHash))
             {
-                ModelState.AddModelError("", "Tên đăng nhập hoặc mật khẩu không đúng.");
+                ModelState.AddModelError("", "Ten dang nhap hoac mat khau khong dung.");
                 return View(model);
             }
 
             if (user.Role != "Admin" && !user.IsActivated)
             {
-                ModelState.AddModelError("", "Tài khoản này chưa được kích hoạt. Vui lòng dùng chức năng đăng ký để xác thực email và tạo mật khẩu.");
+                ModelState.AddModelError("", "Tai khoan nay chua duoc kich hoat. Vui long dung trang dang ky de tu dat mat khau.");
                 return View(model);
             }
 
             if (user.IsLocked)
             {
-                ModelState.AddModelError("", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                ModelState.AddModelError("", "Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.");
                 return View(model);
             }
 
@@ -93,7 +91,7 @@ namespace ExamSystem.Controllers
 
             if (user.MustChangePassword && user.Role != "Admin")
             {
-                TempData["Info"] = "Bạn đang dùng mật khẩu tạm. Vui lòng đổi mật khẩu ngay để bảo vệ tài khoản.";
+                TempData["Info"] = "Ban dang dung mat khau tam. Vui long doi mat khau ngay.";
                 return RedirectToAction("ChangePassword");
             }
 
@@ -115,43 +113,50 @@ namespace ExamSystem.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == model.Username && u.Role != "Admin");
+            var user = await _db.Users
+                .Include(u => u.Student)
+                .Include(u => u.Teacher)
+                .FirstOrDefaultAsync(u => u.Username == model.Username && u.Role != "Admin");
+
             if (user == null)
             {
-                ModelState.AddModelError("", "Không tìm thấy tài khoản phù hợp để đăng ký.");
+                ModelState.AddModelError("", "Khong tim thay tai khoan phu hop de kich hoat.");
                 return View(model);
             }
 
             if (user.IsActivated)
             {
-                ModelState.AddModelError("", "Tài khoản này đã được kích hoạt. Bạn có thể dùng chức năng quên mật khẩu nếu cần.");
+                ModelState.AddModelError("", "Tai khoan nay da duoc kich hoat.");
                 return View(model);
             }
 
-            if (!string.IsNullOrWhiteSpace(user.Email)
-                && !string.Equals(user.Email.Trim(), model.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(NormalizeText(user.FullName), NormalizeText(model.FullName), StringComparison.OrdinalIgnoreCase))
             {
-                ModelState.AddModelError("Email", "Email không khớp với thông tin tài khoản đã được cấp.");
+                ModelState.AddModelError("FullName", "Ho va ten khong khop voi du lieu tai khoan.");
                 return View(model);
             }
 
-            user.Email = model.Email.Trim();
+            if (!ValidateOwnershipProof(user, model.Phone, model.DateOfBirth))
+                return View(model);
+
+            user.PasswordHash = BC.HashPassword(model.NewPassword);
+            user.IsActivated = true;
+            user.MustChangePassword = false;
             user.UpdatedAt = DateTime.Now;
 
-            var token = await CreateEmailVerificationTokenAsync(user, "Register", user.Email);
-            await _db.SaveChangesAsync();
-            try
-            {
-                await SendVerificationEmailAsync(user.FullName, user.Email!, token.Code, "Xác thực đăng ký tài khoản");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"Không gửi được email xác thực: {ex.Message}");
-                return View(model);
-            }
+            var recoveryCode = GenerateRecoveryCode();
+            user.RecoveryCodeHash = BC.HashPassword(recoveryCode);
+            user.RecoveryCodeUpdatedAt = DateTime.Now;
 
-            TempData["Success"] = "Mã xác thực đã được gửi tới email của bạn.";
-            return RedirectToAction("VerifyOtp", new { key = token.Token.VerificationKey, purpose = "Register" });
+            await _db.SaveChangesAsync();
+
+            return View("RecoveryCode", new RecoveryCodeViewModel
+            {
+                Username = user.Username,
+                RecoveryCode = recoveryCode,
+                Title = "Kich hoat tai khoan thanh cong",
+                Description = "Day la ma khoi phuc duy nhat de tu dat lai mat khau khi quen. He thong chi hien thi ma nay mot lan."
+            });
         }
 
         [HttpGet]
@@ -170,127 +175,63 @@ namespace ExamSystem.Controllers
 
             if (user == null || !user.IsActivated)
             {
-                ModelState.AddModelError("", "Không tìm thấy tài khoản đã kích hoạt phù hợp.");
+                ModelState.AddModelError("", "Khong tim thay tai khoan da kich hoat phu hop.");
                 return View(model);
             }
 
-            if (string.IsNullOrWhiteSpace(user.Email))
+            if (string.IsNullOrWhiteSpace(user.RecoveryCodeHash) || !BC.Verify(model.RecoveryCode.Trim(), user.RecoveryCodeHash))
             {
-                ModelState.AddModelError("", "Tài khoản này chưa có email để khôi phục mật khẩu.");
+                ModelState.AddModelError("RecoveryCode", "Ma khoi phuc khong dung.");
                 return View(model);
             }
 
-            if (!string.IsNullOrWhiteSpace(model.Email)
-                && !string.Equals(user.Email.Trim(), model.Email.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError("Email", "Email không khớp với tài khoản.");
-                return View(model);
-            }
+            user.PasswordHash = BC.HashPassword(model.NewPassword);
+            user.MustChangePassword = false;
+            user.UpdatedAt = DateTime.Now;
 
-            var token = await CreateEmailVerificationTokenAsync(user, "ResetPassword", user.Email);
+            var recoveryCode = GenerateRecoveryCode();
+            user.RecoveryCodeHash = BC.HashPassword(recoveryCode);
+            user.RecoveryCodeUpdatedAt = DateTime.Now;
+
             await _db.SaveChangesAsync();
-            try
-            {
-                await SendVerificationEmailAsync(user.FullName, user.Email, token.Code, "Mã xác thực khôi phục mật khẩu");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"Không gửi được email xác thực: {ex.Message}");
-                return View(model);
-            }
 
-            TempData["Success"] = "Mã xác thực khôi phục mật khẩu đã được gửi tới email của bạn.";
-            return RedirectToAction("VerifyOtp", new { key = token.Token.VerificationKey, purpose = "ResetPassword" });
+            return View("RecoveryCode", new RecoveryCodeViewModel
+            {
+                Username = user.Username,
+                RecoveryCode = recoveryCode,
+                Title = "Dat lai mat khau thanh cong",
+                Description = "Ma khoi phuc cu da het hieu luc. Hay luu ma moi nay de tu dat lai mat khau trong lan sau."
+            });
         }
 
         [HttpGet]
-        public async Task<IActionResult> VerifyOtp(string key, string purpose)
+        public IActionResult VerifyOtp(string key, string purpose)
         {
-            var token = await FindActiveTokenAsync(key, purpose);
-            if (token == null)
-            {
-                TempData["Error"] = "Mã xác thực không còn hợp lệ hoặc đã hết hạn.";
-                return RedirectToAction(purpose == "Register" ? "Register" : "ForgotPassword");
-            }
-
-            return View(new VerifyOtpViewModel
-            {
-                VerificationKey = key,
-                Purpose = purpose,
-                MaskedEmail = MaskEmail(token.Email)
-            });
+            TempData["Error"] = "Chuc nang xac thuc qua email da duoc tat. Vui long dung kich hoat tai khoan hoac ma khoi phuc.";
+            return RedirectToAction(purpose == "Register" ? "Register" : "ForgotPassword");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyOtp(VerifyOtpViewModel model)
+        public IActionResult VerifyOtp(VerifyOtpViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            var token = await FindActiveTokenAsync(model.VerificationKey, model.Purpose);
-            if (token == null)
-            {
-                TempData["Error"] = "Mã xác thực không còn hợp lệ hoặc đã hết hạn.";
-                return RedirectToAction(model.Purpose == "Register" ? "Register" : "ForgotPassword");
-            }
-
-            if (!BC.Verify(model.Code, token.CodeHash))
-            {
-                token.FailedAttempts += 1;
-                await _db.SaveChangesAsync();
-                ModelState.AddModelError("Code", "Mã xác thực không đúng.");
-                model.MaskedEmail = MaskEmail(token.Email);
-                return View(model);
-            }
-
-            token.VerifiedAt = DateTime.Now;
-            await _db.SaveChangesAsync();
-            return RedirectToAction("SetPassword", new { key = token.VerificationKey, purpose = model.Purpose });
+            TempData["Error"] = "Chuc nang xac thuc qua email da duoc tat. Vui long dung kich hoat tai khoan hoac ma khoi phuc.";
+            return RedirectToAction(model.Purpose == "Register" ? "Register" : "ForgotPassword");
         }
 
         [HttpGet]
-        public async Task<IActionResult> SetPassword(string key, string purpose)
+        public IActionResult SetPassword(string key, string purpose)
         {
-            var token = await FindVerifiedTokenAsync(key, purpose);
-            if (token == null)
-            {
-                TempData["Error"] = "Phiên xác thực không hợp lệ. Vui lòng yêu cầu mã mới.";
-                return RedirectToAction(purpose == "Register" ? "Register" : "ForgotPassword");
-            }
-
-            return View(new SetPasswordViewModel
-            {
-                VerificationKey = key,
-                Purpose = purpose
-            });
+            TempData["Error"] = "Chuc nang dat mat khau qua email da duoc tat. Vui long quay lai va dung luong moi.";
+            return RedirectToAction(purpose == "Register" ? "Register" : "ForgotPassword");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SetPassword(SetPasswordViewModel model)
+        public IActionResult SetPassword(SetPasswordViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            var token = await FindVerifiedTokenAsync(model.VerificationKey, model.Purpose);
-            if (token == null)
-            {
-                TempData["Error"] = "Phiên xác thực không hợp lệ. Vui lòng yêu cầu mã mới.";
-                return RedirectToAction(model.Purpose == "Register" ? "Register" : "ForgotPassword");
-            }
-
-            token.User.PasswordHash = BC.HashPassword(model.NewPassword);
-            token.User.IsActivated = true;
-            token.User.MustChangePassword = false;
-            token.User.UpdatedAt = DateTime.Now;
-            token.ConsumedAt = DateTime.Now;
-
-            await _db.SaveChangesAsync();
-
-            TempData["Success"] = model.Purpose == "Register"
-                ? "Kích hoạt tài khoản thành công. Bạn có thể đăng nhập ngay bây giờ."
-                : "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập với mật khẩu mới.";
-
-            return RedirectToAction("Login");
+            TempData["Error"] = "Chuc nang dat mat khau qua email da duoc tat. Vui long quay lai va dung luong moi.";
+            return RedirectToAction(model.Purpose == "Register" ? "Register" : "ForgotPassword");
         }
 
         private IActionResult RedirectToHome()
@@ -384,7 +325,7 @@ namespace ExamSystem.Controllers
             }
 
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Cập nhật thông tin thành công!";
+            TempData["Success"] = "Cap nhat thong tin thanh cong.";
             return RedirectToAction("Profile");
         }
 
@@ -409,17 +350,25 @@ namespace ExamSystem.Controllers
 
             if (!BC.Verify(model.OldPassword, user.PasswordHash))
             {
-                ModelState.AddModelError("OldPassword", "Mật khẩu cũ không đúng.");
+                ModelState.AddModelError("OldPassword", "Mat khau cu khong dung.");
                 return View(model);
             }
 
             user.PasswordHash = BC.HashPassword(model.NewPassword);
             user.MustChangePassword = false;
+            var recoveryCode = GenerateRecoveryCode();
+            user.RecoveryCodeHash = BC.HashPassword(recoveryCode);
+            user.RecoveryCodeUpdatedAt = DateTime.Now;
             user.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
 
-            TempData["Success"] = "Đổi mật khẩu thành công!";
-            return RedirectToAction("Profile");
+            return View("RecoveryCode", new RecoveryCodeViewModel
+            {
+                Username = user.Username,
+                RecoveryCode = recoveryCode,
+                Title = "Doi mat khau thanh cong",
+                Description = "He thong da cap ma khoi phuc moi sau khi doi mat khau. Ma cu khong con hieu luc."
+            });
         }
 
         [HttpGet]
@@ -428,82 +377,77 @@ namespace ExamSystem.Controllers
             return View();
         }
 
-        private async Task<(EmailVerificationToken Token, string Code)> CreateEmailVerificationTokenAsync(User user, string purpose, string email)
+        private bool ValidateOwnershipProof(User user, string? phone, DateOnly? dateOfBirth)
         {
-            var existingTokens = await _db.EmailVerificationTokens
-                .Where(t => t.UserId == user.UserId && t.Purpose == purpose && t.ConsumedAt == null)
-                .ToListAsync();
-
-            if (existingTokens.Count > 0)
-                _db.EmailVerificationTokens.RemoveRange(existingTokens);
-
-            var code = Random.Shared.Next(100000, 999999).ToString();
-            var token = new EmailVerificationToken
+            if (user.Role == "Teacher")
             {
-                UserId = user.UserId,
-                Purpose = purpose,
-                Email = email,
-                CodeHash = BC.HashPassword(code),
-                VerificationKey = Guid.NewGuid().ToString("N"),
-                CreatedAt = DateTime.Now,
-                ExpiresAt = DateTime.Now.AddMinutes(10)
-            };
+                if (string.IsNullOrWhiteSpace(user.Phone))
+                {
+                    ModelState.AddModelError("", "Tai khoan giao vien nay chua co so dien thoai doi chieu. Admin can cap nhat so dien thoai truoc.");
+                    return false;
+                }
 
-            _db.EmailVerificationTokens.Add(token);
-            return (token, code);
+                if (!string.Equals(NormalizePhone(user.Phone), NormalizePhone(phone), StringComparison.Ordinal))
+                {
+                    ModelState.AddModelError("Phone", "So dien thoai khong khop voi du lieu tai khoan.");
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (user.Role == "Student")
+            {
+                var dob = user.Student?.DateOfBirth;
+                if (dob == null)
+                {
+                    ModelState.AddModelError("", "Tai khoan sinh vien nay chua co ngay sinh doi chieu. Admin can cap nhat ngay sinh truoc.");
+                    return false;
+                }
+
+                if (dateOfBirth == null || dob.Value != dateOfBirth.Value)
+                {
+                    ModelState.AddModelError("DateOfBirth", "Ngay sinh khong khop voi du lieu tai khoan.");
+                    return false;
+                }
+
+                return true;
+            }
+
+            ModelState.AddModelError("", "Khong ho tro tu kich hoat tai khoan nay.");
+            return false;
         }
 
-        private async Task<EmailVerificationToken?> FindActiveTokenAsync(string key, string purpose)
+        private static string GenerateRecoveryCode()
         {
-            var now = DateTime.Now;
-            return await _db.EmailVerificationTokens
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t =>
-                    t.VerificationKey == key
-                    && t.Purpose == purpose
-                    && t.ConsumedAt == null
-                    && t.ExpiresAt > now
-                    && t.FailedAttempts < 5);
+            const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            Span<char> buffer = stackalloc char[14];
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = i is 4 or 9 ? '-' : alphabet[Random.Shared.Next(alphabet.Length)];
+            }
+
+            return new string(buffer);
         }
 
-        private async Task<EmailVerificationToken?> FindVerifiedTokenAsync(string key, string purpose)
+        private static string NormalizePhone(string? value)
         {
-            var now = DateTime.Now;
-            return await _db.EmailVerificationTokens
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t =>
-                    t.VerificationKey == key
-                    && t.Purpose == purpose
-                    && t.VerifiedAt != null
-                    && t.ConsumedAt == null
-                    && t.ExpiresAt > now);
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var builder = new StringBuilder(value.Length);
+            foreach (var c in value)
+            {
+                if (char.IsDigit(c))
+                    builder.Append(c);
+            }
+
+            return builder.ToString();
         }
 
-        private async Task SendVerificationEmailAsync(string fullName, string email, string code, string title)
+        private static string NormalizeText(string? value)
         {
-            var html = $"""
-                <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.6;color:#0f172a">
-                    <h2 style="margin-bottom:8px">{title}</h2>
-                    <p>Xin chào <strong>{fullName}</strong>,</p>
-                    <p>Mã xác thực của bạn là:</p>
-                    <div style="font-size:28px;font-weight:700;letter-spacing:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px 20px;display:inline-block;color:#1d4ed8">
-                        {code}
-                    </div>
-                    <p style="margin-top:16px">Mã có hiệu lực trong <strong>10 phút</strong>.</p>
-                    <p>Nếu bạn không thực hiện thao tác này, hãy bỏ qua email.</p>
-                </div>
-                """;
-
-            await _emailSender.SendAsync(email, title, html);
-        }
-
-        private static string MaskEmail(string email)
-        {
-            var parts = email.Split('@');
-            if (parts.Length != 2 || parts[0].Length <= 2)
-                return email;
-
-            return $"{parts[0][0]}***{parts[0][^1]}@{parts[1]}";
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

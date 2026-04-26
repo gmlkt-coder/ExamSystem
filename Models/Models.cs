@@ -32,6 +32,9 @@ namespace ExamSystem.Models
         public bool IsLocked { get; set; } = false;
         public bool IsActivated { get; set; } = false;
         public bool MustChangePassword { get; set; } = false;
+        [MaxLength(256)]
+        public string? RecoveryCodeHash { get; set; }
+        public DateTime? RecoveryCodeUpdatedAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;

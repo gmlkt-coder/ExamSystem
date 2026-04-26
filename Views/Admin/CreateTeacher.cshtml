@@ -9,7 +9,7 @@
     </a>
     <div>
         <h4 class="fw-bold mb-1"><i class="fas fa-user-plus me-2 text-primary"></i>Thêm tài khoản Giáo viên</h4>
-        <p class="text-muted mb-0">Admin chỉ tạo hồ sơ. Giáo viên sẽ tự kích hoạt tài khoản bằng email Gmail.</p>
+        <p class="text-muted mb-0">Admin chỉ tạo hồ sơ. Giáo viên sẽ tự đặt mật khẩu bằng mã tài khoản và số điện thoại.</p>
     </div>
 </div>
 
@@ -40,13 +40,13 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label asp-for="Email" class="form-label fw-semibold small"></label>
-                            <input asp-for="Email" class="form-control" placeholder="teacher@gmail.com" />
+                            <input asp-for="Email" class="form-control" placeholder="Có thể bỏ trống" />
                             <span asp-validation-for="Email" class="text-danger small"></span>
-                            <div class="form-text">Email này sẽ nhận mã kích hoạt tài khoản.</div>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Phone" class="form-label fw-semibold small"></label>
-                            <input asp-for="Phone" class="form-control" placeholder="0xxxxxxxxx" />
+                            <input asp-for="Phone" class="form-control" placeholder="Bắt buộc để kích hoạt" />
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
                         </div>
                     </div>
 
@@ -57,7 +57,7 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Degree" class="form-label fw-semibold small"></label>
-                            <input asp-for="Degree" class="form-control" placeholder="VD: Thạc sĩ, Tiến sĩ" />
+                            <input asp-for="Degree" class="form-control" placeholder="VD: Thạc sĩ" />
                         </div>
                     </div>
 
@@ -82,14 +82,14 @@
                     @Html.AntiForgeryToken()
                     <div class="mb-3">
                         <label asp-for="BulkInput" class="form-label fw-semibold small"></label>
-                        <textarea asp-for="BulkInput" class="form-control" rows="12" placeholder="GV001|Nguyễn Văn A|a@gmail.com|0909000001|CNTT|Thạc sĩ&#10;GV002|Trần Thị B|b@gmail.com|0909000002|Toán|Tiến sĩ"></textarea>
+                        <textarea asp-for="BulkInput" class="form-control" rows="12" placeholder="GV001|Nguyen Van A|a@example.com|0909000001|CNTT|Thac si&#10;GV002|Tran Thi B|b@example.com|0909000002|Toan|Tien si"></textarea>
                         <span asp-validation-for="BulkInput" class="text-danger small"></span>
                     </div>
 
                     <div class="alert alert-light border small">
                         <div class="fw-semibold mb-2">Định dạng mỗi dòng</div>
                         <code>MaGV|HoTen|Email|SoDienThoai|Khoa|HocVi</code>
-                        <div class="mt-2 text-muted">Email là bắt buộc vì tài khoản sẽ được kích hoạt bằng mã xác thực Gmail.</div>
+                        <div class="mt-2 text-muted">Số điện thoại là bắt buộc để giáo viên tự kích hoạt và tự đặt mật khẩu.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -109,7 +109,7 @@
         function fillTeacherSample() {
             const area = document.getElementById('BulkInput');
             if (!area.value.trim()) {
-                area.value = "GV001|Nguyễn Văn A|a@gmail.com|0909000001|CNTT|Thạc sĩ\nGV002|Trần Thị B|b@gmail.com|0909000002|Toán|Tiến sĩ";
+                area.value = "GV001|Nguyen Van A|a@example.com|0909000001|CNTT|Thac si\nGV002|Tran Thi B|b@example.com|0909000002|Toan|Tien si";
             }
         }
     </script>

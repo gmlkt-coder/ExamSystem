@@ -1,0 +1,66 @@
+@model ExamSystem.ViewModels.RecoveryCodeViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Mã khôi phục";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mã khôi phục - ExamSystem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #38bdf8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Segoe UI", sans-serif;
+        }
+        .result-card {
+            width: 520px;
+            border-radius: 18px;
+            box-shadow: 0 22px 50px rgba(15, 23, 42, .25);
+        }
+        .recovery-code {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 16px 20px;
+            text-align: center;
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="card result-card border-0">
+        <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="mb-3 text-success" style="font-size:2.2rem"><i class="fas fa-shield-alt"></i></div>
+                <h3 class="fw-bold mb-1">@Model.Title</h3>
+                <p class="text-muted mb-0">@Model.Description</p>
+            </div>
+
+            <div class="alert alert-light border small mb-3">
+                Tài khoản: <strong>@Model.Username</strong>
+            </div>
+
+            <div class="recovery-code mb-3">@Model.RecoveryCode</div>
+
+            <div class="alert alert-warning small mb-4">
+                Hãy lưu mã này ở nơi an toàn. Hệ thống không cho admin xem mã này và cũng không hiển thị lại mã cũ.
+            </div>
+
+            <a asp-action="Login" class="btn btn-primary w-100">
+                <i class="fas fa-sign-in-alt me-2"></i>Về trang đăng nhập
+            </a>
+        </div>
+    </div>
+</body>
+</html>

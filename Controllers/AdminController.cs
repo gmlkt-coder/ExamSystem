@@ -68,7 +68,7 @@ namespace ExamSystem.Controllers
                 return View(model);
             }
 
-            TempData["Success"] = $"Đã tạo tài khoản giáo viên {model.FullName}. Giáo viên cần vào trang đăng ký để kích hoạt bằng email.";
+            TempData["Success"] = $"Da tao tai khoan giao vien {model.FullName}. Giao vien se tu kich hoat bang ma tai khoan va so dien thoai.";
             return RedirectToAction("Users");
         }
 
@@ -94,7 +94,7 @@ namespace ExamSystem.Controllers
                 return View(model);
             }
 
-            TempData["Success"] = $"Đã tạo tài khoản sinh viên {model.FullName}. Sinh viên cần vào trang đăng ký để kích hoạt bằng email.";
+            TempData["Success"] = $"Da tao tai khoan sinh vien {model.FullName}. Sinh vien se tu kich hoat bang ma tai khoan va ngay sinh.";
             return RedirectToAction("Users");
         }
 
@@ -162,7 +162,7 @@ namespace ExamSystem.Controllers
             }
 
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Cập nhật tài khoản thành công!";
+            TempData["Success"] = "Cap nhat tai khoan thanh cong.";
             return RedirectToAction("Users");
         }
 
@@ -178,8 +178,8 @@ namespace ExamSystem.Controllers
             await _db.SaveChangesAsync();
 
             TempData["Success"] = user.IsLocked
-                ? $"Đã khóa tài khoản {user.FullName}."
-                : $"Đã mở khóa tài khoản {user.FullName}.";
+                ? $"Da khoa tai khoan {user.FullName}."
+                : $"Da mo khoa tai khoan {user.FullName}.";
 
             return RedirectToAction("Users");
         }
@@ -203,7 +203,7 @@ namespace ExamSystem.Controllers
         {
             if (selectedUserIds == null || selectedUserIds.Count == 0)
             {
-                TempData["Error"] = "Vui lòng chọn ít nhất 1 tài khoản để xóa.";
+                TempData["Error"] = "Vui long chon it nhat 1 tai khoan de xoa.";
                 return RedirectToAction("Users");
             }
 
@@ -222,7 +222,7 @@ namespace ExamSystem.Controllers
 
             if (parsedTeachers.Count == 0)
             {
-                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), "Vui lòng nhập ít nhất 1 dòng giáo viên.");
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), "Vui long nhap it nhat 1 dong giao vien.");
                 return View(model);
             }
 
@@ -234,7 +234,7 @@ namespace ExamSystem.Controllers
 
             if (duplicateCodes.Count > 0)
             {
-                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Trùng mã giáo viên trong danh sách: {string.Join(", ", duplicateCodes)}.");
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Trung ma giao vien trong danh sach: {string.Join(", ", duplicateCodes)}.");
                 return View(model);
             }
 
@@ -246,7 +246,7 @@ namespace ExamSystem.Controllers
 
             if (existingCodes.Count > 0)
             {
-                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Các mã giáo viên đã tồn tại: {string.Join(", ", existingCodes)}.");
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Cac ma giao vien da ton tai: {string.Join(", ", existingCodes)}.");
                 return View(model);
             }
 
@@ -266,13 +266,13 @@ namespace ExamSystem.Controllers
 
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
-                TempData["Success"] = $"Đã tạo {parsedTeachers.Count} tài khoản giáo viên. Các tài khoản này sẽ tự kích hoạt qua email.";
+                TempData["Success"] = $"Da tao {parsedTeachers.Count} tai khoan giao vien. Cac tai khoan nay se tu kich hoat bang so dien thoai.";
                 return RedirectToAction("Users");
             }
             catch
             {
                 await transaction.RollbackAsync();
-                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), "Lỗi khi tạo danh sách giáo viên. Vui lòng kiểm tra dữ liệu và thử lại.");
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), "Loi khi tao danh sach giao vien. Vui long kiem tra du lieu va thu lai.");
                 return View(model);
             }
         }
@@ -287,7 +287,7 @@ namespace ExamSystem.Controllers
 
             if (parsedStudents.Count == 0)
             {
-                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), "Vui lòng nhập ít nhất 1 dòng sinh viên.");
+                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), "Vui long nhap it nhat 1 dong sinh vien.");
                 return View(model);
             }
 
@@ -299,7 +299,7 @@ namespace ExamSystem.Controllers
 
             if (duplicateCodes.Count > 0)
             {
-                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Trùng mã sinh viên trong danh sách: {string.Join(", ", duplicateCodes)}.");
+                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Trung ma sinh vien trong danh sach: {string.Join(", ", duplicateCodes)}.");
                 return View(model);
             }
 
@@ -311,7 +311,7 @@ namespace ExamSystem.Controllers
 
             if (existingCodes.Count > 0)
             {
-                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Các mã sinh viên đã tồn tại: {string.Join(", ", existingCodes)}.");
+                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Cac ma sinh vien da ton tai: {string.Join(", ", existingCodes)}.");
                 return View(model);
             }
 
@@ -331,13 +331,13 @@ namespace ExamSystem.Controllers
 
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
-                TempData["Success"] = $"Đã tạo {parsedStudents.Count} tài khoản sinh viên. Các tài khoản này sẽ tự kích hoạt qua email.";
+                TempData["Success"] = $"Da tao {parsedStudents.Count} tai khoan sinh vien. Cac tai khoan nay se tu kich hoat bang ngay sinh.";
                 return RedirectToAction("Users");
             }
             catch
             {
                 await transaction.RollbackAsync();
-                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), "Lỗi khi tạo danh sách sinh viên. Vui lòng kiểm tra dữ liệu và thử lại.");
+                ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), "Loi khi tao danh sach sinh vien. Vui long kiem tra du lieu va thu lai.");
                 return View(model);
             }
         }
@@ -345,10 +345,10 @@ namespace ExamSystem.Controllers
         private async Task<OperationResult> CreateTeacherAccountAsync(CreateTeacherViewModel model, bool saveImmediately = true)
         {
             if (await _db.Users.AnyAsync(u => u.Username == model.TeacherCode))
-                return OperationResult.Fail("Mã giáo viên này đã tồn tại.");
+                return OperationResult.Fail("Ma giao vien nay da ton tai.");
 
-            if (string.IsNullOrWhiteSpace(model.Email))
-                return OperationResult.Fail("Email giáo viên là bắt buộc để kích hoạt tài khoản.");
+            if (string.IsNullOrWhiteSpace(model.Phone))
+                return OperationResult.Fail("So dien thoai giao vien la bat buoc de tu kich hoat tai khoan.");
 
             var user = new User
             {
@@ -384,10 +384,10 @@ namespace ExamSystem.Controllers
         private async Task<OperationResult> CreateStudentAccountAsync(CreateStudentViewModel model, bool saveImmediately = true)
         {
             if (await _db.Users.AnyAsync(u => u.Username == model.StudentCode))
-                return OperationResult.Fail("Mã sinh viên này đã tồn tại.");
+                return OperationResult.Fail("Ma sinh vien nay da ton tai.");
 
-            if (string.IsNullOrWhiteSpace(model.Email))
-                return OperationResult.Fail("Email sinh viên là bắt buộc để kích hoạt tài khoản.");
+            if (model.DateOfBirth == null)
+                return OperationResult.Fail("Ngay sinh sinh vien la bat buoc de tu kich hoat tai khoan.");
 
             var user = new User
             {
@@ -432,7 +432,7 @@ namespace ExamSystem.Controllers
                 var parts = lines[i].Split('|');
                 if (parts.Length < 6)
                 {
-                    ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Dòng {i + 1} chưa đủ 6 cột theo định dạng mã|họ tên|email|sđt|khoa|học vị.");
+                    ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Dong {i + 1} chua du 6 cot theo dinh dang ma|ho ten|email|so dien thoai|khoa|hoc vi.");
                     continue;
                 }
 
@@ -446,9 +446,9 @@ namespace ExamSystem.Controllers
                     Degree = NormalizeOptional(parts[5])
                 };
 
-                if (string.IsNullOrWhiteSpace(item.TeacherCode) || string.IsNullOrWhiteSpace(item.FullName) || string.IsNullOrWhiteSpace(item.Email))
+                if (string.IsNullOrWhiteSpace(item.TeacherCode) || string.IsNullOrWhiteSpace(item.FullName) || string.IsNullOrWhiteSpace(item.Phone))
                 {
-                    ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Dòng {i + 1} thiếu mã giáo viên, họ tên hoặc email.");
+                    ModelState.AddModelError(nameof(CreateTeacherViewModel.BulkInput), $"Dong {i + 1} thieu ma giao vien, ho ten hoac so dien thoai.");
                     continue;
                 }
 
@@ -470,7 +470,7 @@ namespace ExamSystem.Controllers
                 var parts = lines[i].Split('|');
                 if (parts.Length < 6)
                 {
-                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dòng {i + 1} chưa đủ 6 cột theo định dạng mã|họ tên|email|sđt|lớp|ngày sinh.");
+                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dong {i + 1} chua du 6 cot theo dinh dang ma|ho ten|email|so dien thoai|lop|ngay sinh.");
                     continue;
                 }
 
@@ -478,7 +478,7 @@ namespace ExamSystem.Controllers
                 var rawDate = parts[5].Trim();
                 if (!string.IsNullOrWhiteSpace(rawDate) && !TryParseDateOnly(rawDate, out dateOfBirth))
                 {
-                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dòng {i + 1} có ngày sinh không hợp lệ. Dùng `yyyy-MM-dd` hoặc `dd/MM/yyyy`.");
+                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dong {i + 1} co ngay sinh khong hop le. Dung yyyy-MM-dd hoac dd/MM/yyyy.");
                     continue;
                 }
 
@@ -492,9 +492,9 @@ namespace ExamSystem.Controllers
                     DateOfBirth = dateOfBirth
                 };
 
-                if (string.IsNullOrWhiteSpace(item.StudentCode) || string.IsNullOrWhiteSpace(item.FullName) || string.IsNullOrWhiteSpace(item.Email))
+                if (string.IsNullOrWhiteSpace(item.StudentCode) || string.IsNullOrWhiteSpace(item.FullName) || item.DateOfBirth == null)
                 {
-                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dòng {i + 1} thiếu mã sinh viên, họ tên hoặc email.");
+                    ModelState.AddModelError(nameof(CreateStudentViewModel.BulkInput), $"Dong {i + 1} thieu ma sinh vien, ho ten hoac ngay sinh.");
                     continue;
                 }
 
@@ -514,7 +514,7 @@ namespace ExamSystem.Controllers
                 .ToListAsync();
 
             if (users.Count == 0)
-                return DeleteUsersResult.Fail("Không tìm thấy tài khoản hợp lệ để xóa.", true);
+                return DeleteUsersResult.Fail("Khong tim thay tai khoan hop le de xoa.", true);
 
             using var transaction = await _db.Database.BeginTransactionAsync();
             try
@@ -527,15 +527,15 @@ namespace ExamSystem.Controllers
                 await transaction.CommitAsync();
 
                 var message = users.Count == 1
-                    ? $"Đã xóa tài khoản {users[0].FullName}."
-                    : $"Đã xóa {users.Count} tài khoản đã chọn.";
+                    ? $"Da xoa tai khoan {users[0].FullName}."
+                    : $"Da xoa {users.Count} tai khoan da chon.";
 
                 return DeleteUsersResult.Ok(message);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return DeleteUsersResult.Fail($"Không thể xóa tài khoản: {ex.InnerException?.Message ?? ex.Message}");
+                return DeleteUsersResult.Fail($"Khong the xoa tai khoan: {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 

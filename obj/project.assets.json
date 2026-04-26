@@ -4837,11 +4837,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ASUS\\Documents\\Playground\\ExamSystem\\ExamSystem\\ExamSystem.csproj",
+      "projectUniqueName": "E:\\ExamSystem\\ExamSystem\\ExamSystem.csproj",
       "projectName": "ExamSystem",
-      "projectPath": "C:\\Users\\ASUS\\Documents\\Playground\\ExamSystem\\ExamSystem\\ExamSystem.csproj",
+      "projectPath": "E:\\ExamSystem\\ExamSystem\\ExamSystem.csproj",
       "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ASUS\\Documents\\Playground\\ExamSystem\\ExamSystem\\obj\\",
+      "outputPath": "E:\\ExamSystem\\ExamSystem\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

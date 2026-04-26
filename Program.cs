@@ -45,6 +45,16 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE Users ADD IsActivated bit NOT NULL CONSTRAINT DF_Users_IsActivated DEFAULT 0;
         END
 
+        IF COL_LENGTH('Users', 'RecoveryCodeHash') IS NULL
+        BEGIN
+            ALTER TABLE Users ADD RecoveryCodeHash nvarchar(256) NULL;
+        END
+
+        IF COL_LENGTH('Users', 'RecoveryCodeUpdatedAt') IS NULL
+        BEGIN
+            ALTER TABLE Users ADD RecoveryCodeUpdatedAt datetime2 NULL;
+        END
+
         UPDATE Users
         SET IsActivated = 1
         WHERE Role = 'Admin';

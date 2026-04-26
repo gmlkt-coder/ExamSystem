@@ -47,12 +47,21 @@ namespace ExamSystem.ViewModels
         [Display(Name = "Tên đăng nhập")]
         public string Username { get; set; } = "";
 
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
-        [Display(Name = "Email")]
-        public string? Email { get; set; }
+        [Required(ErrorMessage = "Vui lòng nhập mã khôi phục")]
+        [Display(Name = "Mã khôi phục")]
+        public string RecoveryCode { get; set; } = "";
 
-        [Display(Name = "Ghi chú")]
-        public string? Message { get; set; }
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới")]
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không khớp")]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        public string ConfirmPassword { get; set; } = "";
     }
 
     public class RegisterViewModel
@@ -61,10 +70,28 @@ namespace ExamSystem.ViewModels
         [Display(Name = "Tên đăng nhập")]
         public string Username { get; set; } = "";
 
-        [Required(ErrorMessage = "Vui lòng nhập email")]
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
-        [Display(Name = "Email Gmail")]
-        public string Email { get; set; } = "";
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
+        [Display(Name = "Họ và tên")]
+        public string FullName { get; set; } = "";
+
+        [Display(Name = "Số điện thoại")]
+        public string? Phone { get; set; }
+
+        [DataType(DataType.Date)]
+        [Display(Name = "Ngày sinh")]
+        public DateOnly? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới")]
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không khớp")]
+        [Display(Name = "Xác nhận mật khẩu")]
+        public string ConfirmPassword { get; set; } = "";
     }
 
     public class VerifyOtpViewModel
@@ -103,6 +130,14 @@ namespace ExamSystem.ViewModels
         public string ConfirmPassword { get; set; } = "";
     }
 
+    public class RecoveryCodeViewModel
+    {
+        public string Username { get; set; } = "";
+        public string RecoveryCode { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+
     // ============================================
     // PROFILE VIEW MODEL
     // ============================================
@@ -111,15 +146,15 @@ namespace ExamSystem.ViewModels
         public int UserId { get; set; }
         public string Username { get; set; } = "";
 
-        [Required(ErrorMessage = "Vui lòng nhập họ tên")]
-        [Display(Name = "Họ và tên")]
+        [Required(ErrorMessage = "Vui long nhap ho ten")]
+        [Display(Name = "Ho va ten")]
         public string FullName { get; set; } = "";
 
-        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        [EmailAddress(ErrorMessage = "Email khong hop le")]
         [Display(Name = "Email")]
         public string? Email { get; set; }
 
-        [Display(Name = "Số điện thoại")]
+        [Display(Name = "So dien thoai")]
         public string? Phone { get; set; }
 
         public string Role { get; set; } = "";
@@ -142,7 +177,7 @@ namespace ExamSystem.ViewModels
         [Display(Name = "Mã giáo viên")]
         public string TeacherCode { get; set; } = "";
 
-        [Required(ErrorMessage = "Vui lòng nhập họ tên")]
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
         [Display(Name = "Họ và tên")]
         public string FullName { get; set; } = "";
 
@@ -150,6 +185,7 @@ namespace ExamSystem.ViewModels
         [Display(Name = "Email")]
         public string? Email { get; set; }
 
+        [Required(ErrorMessage = "Số điện thoại là bắt buộc để tự kích hoạt tài khoản")]
         [Display(Name = "Số điện thoại")]
         public string? Phone { get; set; }
 
@@ -172,7 +208,7 @@ namespace ExamSystem.ViewModels
         [Display(Name = "Mã sinh viên")]
         public string StudentCode { get; set; } = "";
 
-        [Required(ErrorMessage = "Vui lòng nhập họ tên")]
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên")]
         [Display(Name = "Họ và tên")]
         public string FullName { get; set; } = "";
 
@@ -188,6 +224,7 @@ namespace ExamSystem.ViewModels
 
         [Display(Name = "Ngày sinh")]
         [DataType(DataType.Date)]
+        [Required(ErrorMessage = "Ngày sinh là bắt buộc để tự kích hoạt tài khoản")]
         public DateOnly? DateOfBirth { get; set; }
 
         [Display(Name = "Mật khẩu ban đầu")]
@@ -201,12 +238,12 @@ namespace ExamSystem.ViewModels
     {
         public int PasswordResetRequestId { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng nhập mật khẩu tạm")]
-        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
-        [Display(Name = "Mật khẩu tạm")]
+        [Required(ErrorMessage = "Vui long nhap mat khau tam")]
+        [MinLength(6, ErrorMessage = "Mat khau phai co it nhat 6 ky tu")]
+        [Display(Name = "Mat khau tam")]
         public string TemporaryPassword { get; set; } = "";
 
-        [Display(Name = "Ghi chú admin")]
+        [Display(Name = "Ghi chu admin")]
         public string? AdminNote { get; set; }
     }
 
@@ -217,14 +254,14 @@ namespace ExamSystem.ViewModels
         public string Role { get; set; } = "";
 
         [Required]
-        [Display(Name = "Họ và tên")]
+        [Display(Name = "Ho va ten")]
         public string FullName { get; set; } = "";
 
         [EmailAddress]
         [Display(Name = "Email")]
         public string? Email { get; set; }
 
-        [Display(Name = "Số điện thoại")]
+        [Display(Name = "So dien thoai")]
         public string? Phone { get; set; }
 
         public string? ClassName { get; set; }
@@ -239,35 +276,35 @@ namespace ExamSystem.ViewModels
     // ============================================
     public class CreateExamViewModel
     {
-        [Required(ErrorMessage = "Tiêu đề không được để trống")]
-        [Display(Name = "Tiêu đề đề thi")]
+        [Required(ErrorMessage = "Tieu de khong duoc de trong")]
+        [Display(Name = "Tieu de de thi")]
         public string Title { get; set; } = "";
 
-        [Display(Name = "Mô tả")]
+        [Display(Name = "Mo ta")]
         public string? Description { get; set; }
 
-        [Display(Name = "Môn học")]
+        [Display(Name = "Mon hoc")]
         public string? Subject { get; set; }
 
-        [Required(ErrorMessage = "Thời gian làm bài là bắt buộc")]
-        [Range(1, 300, ErrorMessage = "Thời gian phải từ 1-300 phút")]
-        [Display(Name = "Thời gian làm bài (phút)")]
+        [Required(ErrorMessage = "Thoi gian lam bai la bat buoc")]
+        [Range(1, 300, ErrorMessage = "Thoi gian phai tu 1-300 phut")]
+        [Display(Name = "Thoi gian lam bai (phut)")]
         public int Duration { get; set; } = 60;
 
-        [Display(Name = "Mật khẩu bài thi")]
+        [Display(Name = "Mat khau bai thi")]
         public string? Password { get; set; }
 
-        [Display(Name = "Điểm tối đa")]
+        [Display(Name = "Diem toi da")]
         public decimal MaxScore { get; set; } = 10.0m;
 
-        [Display(Name = "Cho phép xem lại")]
+        [Display(Name = "Cho phep xem lai")]
         public bool AllowReview { get; set; } = false;
 
-        [Display(Name = "Thời gian bắt đầu")]
+        [Display(Name = "Thoi gian bat dau")]
         [DataType(DataType.DateTime)]
         public DateTime? StartTime { get; set; }
 
-        [Display(Name = "Thời gian kết thúc")]
+        [Display(Name = "Thoi gian ket thuc")]
         [DataType(DataType.DateTime)]
         public DateTime? EndTime { get; set; }
     }
@@ -294,19 +331,19 @@ namespace ExamSystem.ViewModels
         public int ExamId { get; set; }
         public string ExamTitle { get; set; } = "";
 
-        [Required(ErrorMessage = "Nội dung câu hỏi không được để trống")]
-        [Display(Name = "Nội dung câu hỏi")]
+        [Required(ErrorMessage = "Noi dung cau hoi khong duoc de trong")]
+        [Display(Name = "Noi dung cau hoi")]
         public string QuestionText { get; set; } = "";
 
         [Required]
-        [Display(Name = "Loại câu hỏi")]
+        [Display(Name = "Loai cau hoi")]
         public string QuestionType { get; set; } = "MultipleChoice";
 
         [Range(0.1, 100)]
-        [Display(Name = "Điểm")]
+        [Display(Name = "Diem")]
         public decimal Points { get; set; } = 1.0m;
 
-        [Display(Name = "Giải thích")]
+        [Display(Name = "Giai thich")]
         public string? Explanation { get; set; }
 
         public List<AnswerInputViewModel> Answers { get; set; } = new();
@@ -329,8 +366,8 @@ namespace ExamSystem.ViewModels
         public int Duration { get; set; }
         public int QuestionCount { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng nhập mật khẩu bài thi")]
-        [Display(Name = "Mật khẩu bài thi")]
+        [Required(ErrorMessage = "Vui long nhap mat khau bai thi")]
+        [Display(Name = "Mat khau bai thi")]
         public string Password { get; set; } = "";
     }
 
@@ -460,11 +497,11 @@ namespace ExamSystem.ViewModels
     // ============================================
     public class CreatePracticeExamViewModel
     {
-        [Required(ErrorMessage = "Tiêu đề không được để trống")]
-        [Display(Name = "Tiêu đề")]
+        [Required(ErrorMessage = "Tieu de khong duoc de trong")]
+        [Display(Name = "Tieu de")]
         public string Title { get; set; } = "";
 
-        [Display(Name = "Mô tả")]
+        [Display(Name = "Mo ta")]
         public string? Description { get; set; }
     }
 
