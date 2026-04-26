@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "ExamSystem": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:55921;http://localhost:55922"
+    }
+  }
+}

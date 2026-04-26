@@ -1,0 +1,267 @@
+@model ExamSystem.ViewModels.TakeExamViewModel
+@{
+    ViewData["Title"] = "Làm bài thi - " + Model.ExamTitle;
+    Layout = null; // Full screen exam mode
+    var endTime = Model.StartedAt.AddMinutes(Model.Duration);
+    var remainingSeconds = (int)(endTime - DateTime.Now).TotalSeconds;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.ExamTitle - Làm bài</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body { background: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        .exam-header {
+            background: #1e293b; color: white;
+            padding: 1rem 2rem; position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .timer { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .timer.danger { color: #f87171; animation: blink 1s infinite; }
+        @@keyframes blink { 50%{opacity:.5} }
+        .sidebar { width: 200px; }
+        .q-nav-btn {
+            width: 36px; height: 36px; border-radius: 8px; font-size: .8rem;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid #e2e8f0; cursor: pointer; font-weight: 600;
+            transition: all .15s;
+        }
+        .q-nav-btn:hover { border-color: #3b82f6; }
+        .q-nav-btn.answered { background: #3b82f6; color: white; border-color: #3b82f6; }
+        .q-nav-btn.active { background: #1e40af; color: white; border-color: #1e40af; }
+        .question-card {
+            background: white; border-radius: 12px; padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 1.5rem;
+        }
+        .question-number { font-size: .85rem; color: #64748b; font-weight: 600; }
+        .question-text { font-size: 1.05rem; font-weight: 500; margin: .5rem 0 1.2rem; }
+        .answer-opt {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .9rem 1.2rem; border-radius: 10px; margin-bottom: .5rem;
+            border: 2px solid #e2e8f0; cursor: pointer; transition: all .15s;
+        }
+        .answer-opt:hover { border-color: #93c5fd; background: #eff6ff; }
+        .answer-opt input[type=radio]:checked ~ span { font-weight: 500; }
+        .answer-opt:has(input:checked) { border-color: #3b82f6; background: #dbeafe; }
+        textarea.form-control { border: 2px solid #e2e8f0; border-radius: 10px; }
+        textarea.form-control:focus { border-color: #3b82f6; box-shadow: none; }
+        .submit-btn {
+            width: 100%; padding: 1rem; border-radius: 10px;
+            background: #16a34a; color: white; border: none;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: all .2s;
+        }
+        .submit-btn:hover { background: #15803d; }
+        .save-indicator { font-size: .75rem; color: #64748b; }
+    </style>
+</head>
+<body>
+    <!-- EXAM HEADER -->
+    <div class="exam-header">
+        <div>
+            <div class="fw-bold">@Model.ExamTitle</div>
+            <div class="small opacity-75">@Model.Subject &nbsp;|&nbsp; @Model.Questions.Count câu hỏi</div>
+        </div>
+        <div class="text-center">
+            <div class="small opacity-75 mb-1">Thời gian còn lại</div>
+            <div class="timer" id="timer">--:--</div>
+        </div>
+        <div class="text-end">
+            <div class="save-indicator" id="saveStatus">
+                <i class="fas fa-circle text-success"></i> Đã lưu
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid py-3">
+        <div class="row g-3">
+            <!-- QUESTION NAVIGATOR -->
+            <div class="col-auto">
+                <div class="card sticky-top" style="top:80px;width:180px">
+                    <div class="card-body p-3">
+                        <div class="fw-semibold small mb-2 text-muted">Câu hỏi</div>
+                        <div class="d-flex flex-wrap gap-1 mb-3" id="questionNav">
+                            @for (int i = 0; i < Model.Questions.Count; i++)
+                            {
+                                var q = Model.Questions[i];
+                                var answered = q.SelectedAnswerId.HasValue || !string.IsNullOrEmpty(q.EssayAnswer);
+                                <div class="q-nav-btn @(answered ? "answered" : "")" id="nav-@q.QuestionId"
+                                     onclick="scrollToQuestion('@q.QuestionId')">@(i+1)</div>
+                            }
+                        </div>
+                        <div class="small text-muted">
+                            <span class="d-flex align-items-center gap-1 mb-1">
+                                <span style="width:14px;height:14px;background:#3b82f6;border-radius:3px;display:inline-block"></span>
+                                Đã trả lời
+                            </span>
+                            <span class="d-flex align-items-center gap-1">
+                                <span style="width:14px;height:14px;border:2px solid #e2e8f0;border-radius:3px;display:inline-block"></span>
+                                Chưa trả lời
+                            </span>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="text-center">
+                            <div id="answeredCount" class="fw-bold text-primary">0</div>
+                            <div class="small text-muted">/ @Model.Questions.Count đã làm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUESTIONS -->
+            <div class="col">
+                <form id="examForm">
+                    @foreach (var (q, i) in Model.Questions.Select((q, i) => (q, i)))
+                    {
+                        <div class="question-card" id="q-@q.QuestionId">
+                            <div class="question-number">
+                                Câu @(i+1)
+                                <span class="ms-2 badge @(q.QuestionType == "Essay" ? "bg-warning text-dark" : q.QuestionType == "TrueFalse" ? "bg-success" : "bg-primary") rounded-pill small">
+                                    @(q.QuestionType == "MultipleChoice" ? "Trắc nghiệm" : q.QuestionType == "TrueFalse" ? "Đúng/Sai" : "Tự luận")
+                                </span>
+                                <span class="ms-1 text-muted">(@q.Points điểm)</span>
+                            </div>
+                            <div class="question-text">@q.QuestionText</div>
+
+                            @if (q.QuestionType == "Essay")
+                            {
+                                <textarea class="form-control" rows="5"
+                                          placeholder="Nhập câu trả lời..."
+                                          id="essay-@q.QuestionId"
+                                          onchange="saveEssay(@q.QuestionId, this.value)"
+                                          oninput="updateNavEssay(@q.QuestionId, this.value)">@q.EssayAnswer</textarea>
+                            }
+                            else
+                            {
+                                foreach (var a in q.Answers)
+                                {
+                                    <label class="answer-opt">
+                                        <input type="radio" name="q_@q.QuestionId" value="@a.AnswerId"
+                                               @(q.SelectedAnswerId == a.AnswerId ? "checked" : "")
+                                               onchange="saveAnswer(@q.QuestionId, @a.AnswerId)"
+                                               style="display:none" />
+                                        <span class="answer-circle" style="width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700">@("ABCD"[q.Answers.IndexOf(a)])</span>
+                                        <span>@a.AnswerText</span>
+                                    </label>
+                                }
+                            }
+                        </div>
+                    }
+                </form>
+
+                <!-- SUBMIT -->
+                <div class="card p-3">
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-info-circle me-1 text-primary"></i>
+                        Bài thi sẽ được tự động nộp khi hết thời gian. Bạn có thể nộp sớm hơn bằng nút bên dưới.
+                    </p>
+                    <form asp-controller="Exam" asp-action="Submit" method="post" id="submitForm"
+                          onsubmit="return confirmSubmit()">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="submissionId" value="@Model.SubmissionId" />
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane me-2"></i>Nộp bài
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const submissionId = @Model.SubmissionId;
+        const totalSeconds = @remainingSeconds;
+        const totalQ = @Model.Questions.Count;
+
+        // TIMER
+        let secondsLeft = Math.max(0, totalSeconds);
+        function updateTimer() {
+            const m = Math.floor(secondsLeft / 60);
+            const s = secondsLeft % 60;
+            const el = document.getElementById('timer');
+            el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            el.className = 'timer' + (secondsLeft <= 300 ? ' danger' : '');
+
+            if (secondsLeft <= 0) {
+                document.getElementById('submitForm').submit();
+            } else {
+                secondsLeft--;
+                setTimeout(updateTimer, 1000);
+            }
+        }
+        updateTimer();
+
+        // ANSWER COUNT
+        function updateCount() {
+            const answered = document.querySelectorAll('.q-nav-btn.answered').length;
+            document.getElementById('answeredCount').textContent = answered;
+        }
+
+        // SAVE ANSWER (radio)
+        function saveAnswer(questionId, answerId) {
+            setSaving();
+            const nav = document.getElementById(`nav-${questionId}`);
+            nav.classList.add('answered');
+            updateCount();
+
+            fetch('/Exam/SaveAnswer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `submissionId=${submissionId}&questionId=${questionId}&selectedAnswerId=${answerId}`
+            }).then(() => setSaved()).catch(() => setError());
+        }
+
+        // SAVE ESSAY (debounced)
+        let saveTimers = {};
+        function saveEssay(questionId, text) {
+            updateNavEssay(questionId, text);
+            clearTimeout(saveTimers[questionId]);
+            saveTimers[questionId] = setTimeout(() => {
+                setSaving();
+                fetch('/Exam/SaveAnswer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `submissionId=${submissionId}&questionId=${questionId}&essayAnswer=${encodeURIComponent(text)}`
+                }).then(() => setSaved()).catch(() => setError());
+            }, 1000);
+        }
+
+        function updateNavEssay(questionId, text) {
+            const nav = document.getElementById(`nav-${questionId}`);
+            if (text.trim()) nav.classList.add('answered');
+            else nav.classList.remove('answered');
+            updateCount();
+        }
+
+        function setSaving() {
+            document.getElementById('saveStatus').innerHTML = '<i class="fas fa-circle-notch fa-spin text-warning"></i> Đang lưu...';
+        }
+        function setSaved() {
+            document.getElementById('saveStatus').innerHTML = '<i class="fas fa-circle text-success"></i> Đã lưu';
+        }
+        function setError() {
+            document.getElementById('saveStatus').innerHTML = '<i class="fas fa-circle text-danger"></i> Lỗi lưu!';
+        }
+
+        function scrollToQuestion(id) {
+            document.getElementById(`q-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function confirmSubmit() {
+            const answered = document.querySelectorAll('.q-nav-btn.answered').length;
+            const unanswered = totalQ - answered;
+            if (unanswered > 0) {
+                return confirm(`Bạn còn ${unanswered} câu chưa trả lời. Bạn có chắc muốn nộp bài?`);
+            }
+            return confirm('Xác nhận nộp bài?');
+        }
+
+        // Initial count
+        updateCount();
+    </script>
+</body>
+</html>

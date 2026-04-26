@@ -1,0 +1,84 @@
+@model ExamSystem.Models.PracticeExam
+@{
+    ViewData["Title"] = "Làm bài luyện tập - " + Model.Title;
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.Title - Luyện tập</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body { background: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        .exam-header { background: #1e293b; color: white; padding: 1rem 2rem; position: sticky; top: 0; z-index: 100; }
+        .question-card { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 1.5rem; }
+        .answer-opt { display: flex; align-items: center; gap: .8rem; padding: .9rem 1.2rem; border-radius: 10px; margin-bottom: .5rem; border: 2px solid #e2e8f0; cursor: pointer; transition: all .15s; }
+        .answer-opt:hover { border-color: #93c5fd; background: #eff6ff; }
+        .answer-opt:has(input:checked) { border-color: #3b82f6; background: #dbeafe; }
+    </style>
+</head>
+<body>
+    <div class="exam-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-bold">@Model.Title</div>
+                <div class="small opacity-75">@Model.Questions.Count câu hỏi — Luyện tập</div>
+            </div>
+            <span class="badge bg-info text-dark fs-6">Luyện tập</span>
+        </div>
+    </div>
+
+    <div class="container py-4" style="max-width:800px">
+        <form asp-controller="Exam" asp-action="SubmitPractice" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="practiceExamId" value="@Model.PracticeExamId" />
+
+            @foreach (var (q, i) in Model.Questions.OrderBy(q => q.OrderIndex).Select((q, i) => (q, i)))
+            {
+                <div class="question-card">
+                    <div class="text-muted small fw-semibold mb-1">
+                        Câu @(i+1)
+                        <span class="ms-2 badge @(q.QuestionType == "Essay" ? "bg-warning text-dark" : "bg-primary")">
+                            @(q.QuestionType == "Essay" ? "Tự luận" : "Trắc nghiệm")
+                        </span>
+                        <span class="ms-1 text-muted">(@q.Points điểm)</span>
+                    </div>
+                    <p class="fw-semibold mb-3">@q.QuestionText</p>
+
+                    @if (q.QuestionType == "Essay")
+                    {
+                        <textarea class="form-control" rows="4" placeholder="Nhập câu trả lời..."
+                                  name="essayAnswers[@q.PracticeQuestionId]"></textarea>
+                    }
+                    else
+                    {
+                        @foreach (var a in q.Answers.OrderBy(a => a.OrderIndex))
+                        {
+                            <label class="answer-opt">
+                                <input type="radio" name="selectedAnswers[@q.PracticeQuestionId]"
+                                       value="@a.PracticeAnswerId" style="display:none" />
+                                <span style="width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700">
+                                    @("ABCD"[q.Answers.OrderBy(x => x.OrderIndex).ToList().IndexOf(a)])
+                                </span>
+                                <span>@a.AnswerText</span>
+                            </label>
+                        }
+                    }
+                </div>
+            }
+
+            <div class="card p-3 text-center">
+                <button type="submit" class="btn btn-success btn-lg"
+                        onclick="return confirm('Nộp bài luyện tập?')">
+                    <i class="fas fa-paper-plane me-2"></i>Nộp bài và xem kết quả
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

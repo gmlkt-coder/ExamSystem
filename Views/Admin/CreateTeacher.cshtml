@@ -1,0 +1,116 @@
+@model ExamSystem.ViewModels.CreateTeacherViewModel
+@{
+    ViewData["Title"] = "Thêm tài khoản Giáo viên";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Users" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-user-plus me-2 text-primary"></i>Thêm tài khoản Giáo viên</h4>
+        <p class="text-muted mb-0">Admin chỉ tạo hồ sơ. Giáo viên sẽ tự kích hoạt tài khoản bằng email Gmail.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-white fw-semibold">
+                <i class="fas fa-chalkboard-teacher text-primary me-2"></i>Thêm 1 giáo viên
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateTeacher" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger py-2 small" style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="TeacherCode" class="form-label fw-semibold small"></label>
+                            <input asp-for="TeacherCode" class="form-control" placeholder="VD: GV102" />
+                            <span asp-validation-for="TeacherCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label fw-semibold small"></label>
+                            <input asp-for="FullName" class="form-control" placeholder="Họ và tên đầy đủ" />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-semibold small"></label>
+                            <input asp-for="Email" class="form-control" placeholder="teacher@gmail.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                            <div class="form-text">Email này sẽ nhận mã kích hoạt tài khoản.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label fw-semibold small"></label>
+                            <input asp-for="Phone" class="form-control" placeholder="0xxxxxxxxx" />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Department" class="form-label fw-semibold small"></label>
+                            <input asp-for="Department" class="form-control" placeholder="VD: Khoa CNTT" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Degree" class="form-label fw-semibold small"></label>
+                            <input asp-for="Degree" class="form-control" placeholder="VD: Thạc sĩ, Tiến sĩ" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Tạo tài khoản
+                        </button>
+                        <a asp-action="Users" class="btn btn-outline-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100 border-primary-subtle">
+            <div class="card-header bg-primary-subtle fw-semibold">
+                <i class="fas fa-layer-group text-primary me-2"></i>Thêm nhiều giáo viên
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateTeacher" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label asp-for="BulkInput" class="form-label fw-semibold small"></label>
+                        <textarea asp-for="BulkInput" class="form-control" rows="12" placeholder="GV001|Nguyễn Văn A|a@gmail.com|0909000001|CNTT|Thạc sĩ&#10;GV002|Trần Thị B|b@gmail.com|0909000002|Toán|Tiến sĩ"></textarea>
+                        <span asp-validation-for="BulkInput" class="text-danger small"></span>
+                    </div>
+
+                    <div class="alert alert-light border small">
+                        <div class="fw-semibold mb-2">Định dạng mỗi dòng</div>
+                        <code>MaGV|HoTen|Email|SoDienThoai|Khoa|HocVi</code>
+                        <div class="mt-2 text-muted">Email là bắt buộc vì tài khoản sẽ được kích hoạt bằng mã xác thực Gmail.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i>Tạo hàng loạt
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="fillTeacherSample()">Điền mẫu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function fillTeacherSample() {
+            const area = document.getElementById('BulkInput');
+            if (!area.value.trim()) {
+                area.value = "GV001|Nguyễn Văn A|a@gmail.com|0909000001|CNTT|Thạc sĩ\nGV002|Trần Thị B|b@gmail.com|0909000002|Toán|Tiến sĩ";
+            }
+        }
+    </script>
+}

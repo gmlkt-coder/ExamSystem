@@ -1,0 +1,122 @@
+@model ExamSystem.ViewModels.StudentDashboardViewModel
+@{
+    ViewData["Title"] = "Trang chủ - Sinh viên";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Xin chào, @Model.StudentName 👋</h4>
+        <p class="text-muted mb-0">MSSV: <strong>@Model.StudentCode</strong></p>
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card p-3 text-center">
+            <div class="fs-2 fw-bold text-primary">@Model.TotalExamsTaken</div>
+            <div class="small text-muted">Bài thi đã làm</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card p-3 text-center">
+            <div class="fs-2 fw-bold text-success">@(Model.AverageScore?.ToString("F1") ?? "—")</div>
+            <div class="small text-muted">Điểm trung bình</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card p-3 text-center">
+            <div class="fs-2 fw-bold text-warning">@Model.AvailableExams.Count</div>
+            <div class="small text-muted">Đề thi chờ làm</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- AVAILABLE EXAMS -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="fas fa-file-alt text-primary me-2"></i>Đề thi chờ làm</span>
+                <a asp-controller="Student" asp-action="Exams" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            <div class="card-body">
+                @if (!Model.AvailableExams.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                        <p>Bạn đã hoàn thành tất cả đề thi!</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var exam in Model.AvailableExams.Take(4))
+                    {
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 border rounded exam-card">
+                            <div>
+                                <div class="fw-semibold">@exam.Title</div>
+                                <small class="text-muted">
+                                    @exam.Subject &nbsp;|&nbsp; @exam.Duration phút &nbsp;|&nbsp;
+                                    @exam.QuestionCount câu &nbsp;|&nbsp; GV: @exam.TeacherName
+                                </small>
+                            </div>
+                            <a asp-controller="Exam" asp-action="Enter" asp-route-id="@exam.ExamId"
+                               class="btn btn-sm btn-primary ms-2 flex-shrink-0">
+                                Vào thi <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT HISTORY -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="fas fa-history text-primary me-2"></i>Lịch sử gần đây</span>
+                <a asp-controller="Student" asp-action="History" class="btn btn-sm btn-outline-secondary">Tất cả</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.RecentSubmissions.Any())
+                {
+                    <div class="text-center py-4 text-muted p-3">
+                        <i class="fas fa-history fa-2x mb-2 opacity-25"></i>
+                        <p class="small">Chưa có lịch sử làm bài</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var sub in Model.RecentSubmissions)
+                        {
+                            <a asp-controller="Exam" asp-action="Result" asp-route-id="@sub.SubmissionId"
+                               class="list-group-item list-group-item-action py-3">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div class="fw-semibold small">@sub.Exam.Title</div>
+                                        <small class="text-muted">@sub.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </div>
+                                    <div class="text-end">
+                                        @if (sub.TotalScore.HasValue)
+                                        {
+                                            <span class="fw-bold @(sub.TotalScore >= 5 ? "text-success" : "text-danger")">
+                                                @sub.TotalScore.Value.ToString("F1")
+                                            </span>
+                                            <small class="text-muted">/@sub.Exam.MaxScore</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Chờ chấm</span>
+                                        }
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

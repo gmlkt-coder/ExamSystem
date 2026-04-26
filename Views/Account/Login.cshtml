@@ -1,0 +1,138 @@
+@model ExamSystem.ViewModels.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Đăng nhập";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - ExamSystem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Segoe UI", sans-serif;
+        }
+        .login-card {
+            width: 420px;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .login-header .icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, .15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+        }
+        .login-body {
+            background: white;
+            padding: 2rem 2.5rem 2.5rem;
+        }
+        .form-floating .form-control {
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        .form-floating .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+        .btn-login {
+            width: 100%;
+            padding: .8rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all .2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, .4);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+            <h4 class="fw-bold mb-1">ExamSystem</h4>
+            <p class="mb-0 opacity-75">Hệ thống Quản lý và Thi trực tuyến</p>
+        </div>
+        <div class="login-body">
+            <form asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+                <div asp-validation-summary="All" class="alert alert-danger py-2 mb-3 small" style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Username" class="form-control" placeholder="Tên đăng nhập" />
+                    <label asp-for="Username"><i class="fas fa-user me-2 text-muted"></i>Tên đăng nhập</label>
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Password" class="form-control" placeholder="Mật khẩu" type="password" id="passwordInput" />
+                    <label asp-for="Password"><i class="fas fa-lock me-2 text-muted"></i>Mật khẩu</label>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                        <label asp-for="RememberMe" class="form-check-label small">Ghi nhớ đăng nhập</label>
+                    </div>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                </button>
+            </form>
+
+            <div class="text-center mt-4 d-flex justify-content-center gap-3 flex-wrap">
+                <a asp-action="Register" class="small text-decoration-none">Đăng ký</a>
+                <a asp-action="ForgotPassword" class="small text-decoration-none">Quên mật khẩu?</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

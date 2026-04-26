@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Hệ thống Thi trực tuyến</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #2563eb;
+            --sidebar-bg: #1e293b;
+            --sidebar-text: #cbd5e1;
+        }
+        body { background: #f1f5f9; font-family: "Segoe UI", sans-serif; }
+        .navbar-brand { font-weight: 700; font-size: 1.3rem; letter-spacing: -0.5px; }
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: var(--sidebar-bg);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            padding-top: 60px;
+            transition: all .3s;
+        }
+        .sidebar .nav-link {
+            color: var(--sidebar-text);
+            padding: .7rem 1.5rem;
+            border-radius: 0;
+            font-size: .9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, .1);
+            color: #fff;
+        }
+        .sidebar .nav-link i { width: 20px; text-align: center; }
+        .sidebar-section {
+            padding: .5rem 1.5rem;
+            font-size: .7rem;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 1px;
+            margin-top: .5rem;
+        }
+        .main-content { margin-left: 250px; padding: 80px 30px 30px; min-height: 100vh; }
+        .navbar { margin-left: 250px; background: #fff !important; box-shadow: 0 1px 4px rgba(0, 0, 0, .1); }
+        .card { border: none; border-radius: 12px; box-shadow: 0 1px 6px rgba(0, 0, 0, .08); }
+        .card-header { border-radius: 12px 12px 0 0 !important; }
+        .stat-card { border-radius: 12px; color: #fff; padding: 1.5rem; }
+        .stat-card .number { font-size: 2.2rem; font-weight: 700; }
+        .stat-card .label { opacity: .85; font-size: .9rem; }
+        .badge-role-Admin { background: #dc2626; }
+        .badge-role-Teacher { background: #2563eb; }
+        .badge-role-Student { background: #16a34a; }
+        .exam-card { transition: transform .2s, box-shadow .2s; cursor: pointer; }
+        .exam-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, .12) !important; }
+        .question-card { border-left: 4px solid var(--primary); }
+        .question-card.essay { border-left-color: #f59e0b; }
+        .question-card.true-false { border-left-color: #10b981; }
+        .answer-option {
+            padding: .6rem 1rem;
+            border-radius: 8px;
+            margin-bottom: .4rem;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .answer-option:hover { border-color: var(--primary); background: #eff6ff; }
+        .answer-option.selected { border-color: var(--primary); background: #dbeafe; }
+        .answer-option.correct { border-color: #16a34a; background: #dcfce7; }
+        .answer-option.wrong { border-color: #dc2626; background: #fee2e2; }
+        .timer-box {
+            background: #1e293b;
+            color: #fff;
+            padding: .5rem 1.2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .timer-box.danger { background: #dc2626; animation: pulse 1s infinite; }
+        @@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+        .alert-flash {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn .3s;
+        }
+        @@keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        @@media(max-width:768px) {
+            .sidebar { transform: translateX(-250px); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content, .navbar { margin-left: 0; }
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <nav class="navbar navbar-expand-lg fixed-top px-3">
+            <button class="btn btn-sm btn-light d-md-none me-2" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span class="navbar-brand text-primary ms-2">
+                <i class="fas fa-graduation-cap me-2"></i>ExamSystem
+            </span>
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <span class="text-muted small">Xin chào, <strong>@User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value</strong></span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i>Tài khoản
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="fas fa-id-card me-2"></i>Hồ sơ</a></li>
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                @Html.AntiForgeryToken()
+                                <button class="dropdown-item text-danger" type="submit">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-section">Menu chính</div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                   asp-controller="Admin" asp-action="Index">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <div class="sidebar-section">Quản lý</div>
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")"
+                   asp-controller="Admin" asp-action="Users">
+                    <i class="fas fa-users"></i> Quản lý tài khoản
+                </a>
+                <a class="nav-link" asp-controller="Admin" asp-action="CreateTeacher">
+                    <i class="fas fa-user-plus"></i> Thêm giáo viên
+                </a>
+                <a class="nav-link" asp-controller="Admin" asp-action="CreateStudent">
+                    <i class="fas fa-user-graduate"></i> Thêm sinh viên
+                </a>
+            }
+            @if (User.IsInRole("Teacher"))
+            {
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                   asp-controller="Teacher" asp-action="Index">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <div class="sidebar-section">Đề thi</div>
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Exams" ? "active" : "")"
+                   asp-controller="Teacher" asp-action="Exams">
+                    <i class="fas fa-file-alt"></i> Danh sách đề thi
+                </a>
+                <a class="nav-link" asp-controller="Teacher" asp-action="CreateExam">
+                    <i class="fas fa-plus-circle"></i> Tạo đề thi mới
+                </a>
+            }
+            @if (User.IsInRole("Student"))
+            {
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                   asp-controller="Student" asp-action="Index">
+                    <i class="fas fa-home"></i> Trang chủ
+                </a>
+                <div class="sidebar-section">Bài thi</div>
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Exams" ? "active" : "")"
+                   asp-controller="Student" asp-action="Exams">
+                    <i class="fas fa-list-alt"></i> Danh sách đề thi
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")"
+                   asp-controller="Student" asp-action="History">
+                    <i class="fas fa-history"></i> Lịch sử làm bài
+                </a>
+                <div class="sidebar-section">Luyện tập</div>
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Practice" ? "active" : "")"
+                   asp-controller="Student" asp-action="Practice">
+                    <i class="fas fa-dumbbell"></i> Đề luyện tập
+                </a>
+            }
+            <div class="sidebar-section">Tài khoản</div>
+            <a class="nav-link" asp-controller="Account" asp-action="Profile">
+                <i class="fas fa-user-circle"></i> Hồ sơ cá nhân
+            </a>
+        </div>
+
+        <div class="main-content">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible alert-flash">
+                    <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible alert-flash">
+                    <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info alert-dismissible alert-flash">
+                    <i class="fas fa-info-circle me-2"></i>@TempData["Info"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @RenderBody()
+        </div>
+    }
+    else
+    {
+        @RenderBody()
+    }
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.alert-flash').forEach(a => {
+                bootstrap.Alert.getOrCreateInstance(a).close();
+            });
+        }, 4000);
+
+        document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('show');
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

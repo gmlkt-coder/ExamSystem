@@ -1,0 +1,128 @@
+@model ExamSystem.ViewModels.ClassStatisticsViewModel
+@{
+    ViewData["Title"] = "Thống kê kết quả";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Submissions" asp-route-examId="@Model.ExamId" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-chart-bar me-2 text-primary"></i>Thống kê kết quả</h4>
+        <p class="text-muted mb-0">@Model.ExamTitle</p>
+    </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="number">@Model.TotalStudents</div><div class="label">Đã nộp bài</div></div>
+                <i class="fas fa-users fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#065f46,#10b981)">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="number">@(Model.AverageScore?.ToString("F1") ?? "—")</div>
+                    <div class="label">Điểm trung bình</div>
+                </div>
+                <i class="fas fa-chart-line fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="number">@(Model.HighestScore?.ToString("F1") ?? "—")</div>
+                    <div class="label">Điểm cao nhất</div>
+                </div>
+                <i class="fas fa-trophy fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#b45309,#f59e0b)">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="number">@(Model.LowestScore?.ToString("F1") ?? "—")</div>
+                    <div class="label">Điểm thấp nhất</div>
+                </div>
+                <i class="fas fa-arrow-down fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STUDENT RESULTS TABLE -->
+<div class="card">
+    <div class="card-header bg-white fw-semibold">
+        <i class="fas fa-list text-primary me-2"></i>Kết quả từng sinh viên
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.StudentResults.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
+                <p>Chưa có dữ liệu.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Sinh viên</th>
+                            <th>Mã SV</th>
+                            <th>Lớp</th>
+                            <th class="text-center">Điểm</th>
+                            <th class="text-center">Xếp loại</th>
+                            <th>Thời gian nộp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (s, i) in Model.StudentResults.Select((s, i) => (s, i)))
+                        {
+                            var pct = s.TotalScore.HasValue ? (double)s.TotalScore.Value / 10.0 * 100 : 0;
+                            var grade = pct >= 90 ? "Xuất sắc" : pct >= 80 ? "Giỏi" : pct >= 70 ? "Khá" : pct >= 50 ? "TB" : "Yếu";
+                            var gradeColor = pct >= 80 ? "success" : pct >= 60 ? "primary" : pct >= 50 ? "warning" : "danger";
+                            <tr>
+                                <td class="text-muted small">@(i+1)</td>
+                                <td><div class="fw-semibold">@s.StudentName</div></td>
+                                <td><code>@s.StudentCode</code></td>
+                                <td class="small text-muted">@s.ClassName</td>
+                                <td class="text-center">
+                                    @if (s.TotalScore.HasValue)
+                                    {
+                                        <span class="fw-bold text-@gradeColor fs-6">@s.TotalScore.Value.ToString("F1")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (s.TotalScore.HasValue)
+                                    {
+                                        <span class="badge bg-@gradeColor">@grade</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Chờ chấm</span>
+                                    }
+                                </td>
+                                <td class="small text-muted">@s.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

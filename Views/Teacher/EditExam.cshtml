@@ -1,0 +1,194 @@
+@model ExamSystem.ViewModels.CreateExamViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa đề thi";
+    var exam = (ExamSystem.Models.Exam)ViewBag.Exam;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <a asp-action="Exams" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-1"></i>Quay lại
+        </a>
+        <h4 class="d-inline fw-bold">Quản lý đề thi</h4>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Statistics" asp-route-examId="@exam.ExamId" class="btn btn-sm btn-outline-info">
+            <i class="fas fa-chart-bar me-1"></i>Thống kê
+        </a>
+        <a asp-action="Submissions" asp-route-examId="@exam.ExamId" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-inbox me-1"></i>Bài nộp (@exam.Submissions.Count)
+        </a>
+        <form asp-action="TogglePublish" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@exam.ExamId" />
+            <button type="submit" class="btn btn-sm @(exam.IsPublished ? "btn-warning" : "btn-success")">
+                <i class="fas @(exam.IsPublished ? "fa-eye-slash" : "fa-broadcast-tower") me-1"></i>
+                @(exam.IsPublished ? "Ẩn đề thi" : "Công bố")
+            </button>
+        </form>
+        <form asp-action="DeleteExam" method="post" class="d-inline"
+              onsubmit="return confirm('Xóa đề thi này? Hành động không thể hoàn tác.')">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@exam.ExamId" />
+            <button type="submit" class="btn btn-sm btn-danger">
+                <i class="fas fa-trash"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (exam.IsPublished)
+{
+    <div class="alert alert-success py-2 mb-3">
+        <i class="fas fa-broadcast-tower me-2"></i>Đề thi đã được công bố cho sinh viên.
+    </div>
+}
+
+<div class="row g-3">
+    <!-- EXAM INFO FORM -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-white fw-semibold">
+                <i class="fas fa-info-circle text-primary me-2"></i>Thông tin đề thi
+            </div>
+            <div class="card-body">
+                <form asp-action="EditExam" asp-route-id="@exam.ExamId" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label small fw-semibold"></label>
+                        <input asp-for="Title" class="form-control form-control-sm" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Subject" class="form-label small fw-semibold"></label>
+                        <input asp-for="Subject" class="form-control form-control-sm" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label asp-for="Duration" class="form-label small fw-semibold"></label>
+                            <div class="input-group input-group-sm">
+                                <input asp-for="Duration" class="form-control" type="number" min="1" max="300" />
+                                <span class="input-group-text">phút</span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label asp-for="MaxScore" class="form-label small fw-semibold"></label>
+                            <input asp-for="MaxScore" class="form-control form-control-sm" type="number" step="0.5" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label small fw-semibold"></label>
+                        <input asp-for="Password" class="form-control form-control-sm" placeholder="Để trống nếu không cần mật khẩu" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label asp-for="StartTime" class="form-label small fw-semibold"></label>
+                            <input asp-for="StartTime" class="form-control form-control-sm" type="datetime-local" />
+                        </div>
+                        <div class="col">
+                            <label asp-for="EndTime" class="form-label small fw-semibold"></label>
+                            <input asp-for="EndTime" class="form-control form-control-sm" type="datetime-local" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label small fw-semibold"></label>
+                        <textarea asp-for="Description" class="form-control form-control-sm" rows="3"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input asp-for="AllowReview" class="form-check-input" type="checkbox" />
+                        <label asp-for="AllowReview" class="form-check-label small">Cho phép sinh viên xem lại đáp án</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-save me-1"></i>Lưu thay đổi
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-question-circle text-primary me-2"></i>
+                    Câu hỏi (@exam.Questions.Count câu)
+                </span>
+                <a asp-action="AddQuestion" asp-route-examId="@exam.ExamId" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Thêm câu hỏi
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (!exam.Questions.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-file-circle-plus fa-3x mb-3 opacity-25"></i>
+                        <p>Chưa có câu hỏi nào. Hãy thêm câu hỏi đầu tiên!</p>
+                        <a asp-action="AddQuestion" asp-route-examId="@exam.ExamId" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Thêm câu hỏi
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var (q, i) in exam.Questions.OrderBy(q => q.OrderIndex).Select((q, i) => (q, i)))
+                        {
+                            <div class="list-group-item py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="me-3 flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="badge @(q.QuestionType == "Essay" ? "bg-warning text-dark" : q.QuestionType == "TrueFalse" ? "bg-success" : "bg-primary") small">
+                                                @(q.QuestionType == "MultipleChoice" ? "TN" : q.QuestionType == "TrueFalse" ? "Đ/S" : "TL")
+                                            </span>
+                                            <span class="small text-muted">Câu @(i+1) • @q.Points điểm</span>
+                                        </div>
+                                        <p class="mb-1 small" style="max-width:400px">@(q.QuestionText.Length > 100 ? q.QuestionText[..100] + "..." : q.QuestionText)</p>
+                                        @if (q.Answers.Any())
+                                        {
+                                            <small class="text-muted">@q.Answers.Count đáp án</small>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-1 flex-shrink-0">
+                                        <a asp-action="EditQuestion" asp-route-id="@q.QuestionId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form asp-action="DeleteQuestion" method="post" class="d-inline"
+                                              onsubmit="return confirm('Xóa câu hỏi này?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@q.QuestionId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (exam.Questions.Any())
+        {
+            <div class="card mt-3 p-3">
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="fw-bold text-primary fs-4">@exam.Questions.Count</div>
+                        <small class="text-muted">Tổng câu hỏi</small>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold text-success fs-4">@exam.Questions.Sum(q => q.Points)</div>
+                        <small class="text-muted">Tổng điểm câu hỏi</small>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold text-warning fs-4">@exam.Questions.Count(q => q.QuestionType == "Essay")</div>
+                        <small class="text-muted">Câu tự luận</small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

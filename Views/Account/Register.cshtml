@@ -1,0 +1,67 @@
+@model ExamSystem.ViewModels.RegisterViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Đăng ký";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký - ExamSystem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #38bdf8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Segoe UI", sans-serif;
+        }
+        .register-card {
+            width: 460px;
+            border-radius: 18px;
+            box-shadow: 0 22px 50px rgba(15, 23, 42, .25);
+        }
+    </style>
+</head>
+<body>
+    <div class="card register-card border-0">
+        <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="mb-3 text-primary" style="font-size:2.2rem"><i class="fas fa-user-check"></i></div>
+                <h3 class="fw-bold mb-1">Kích hoạt tài khoản</h3>
+                <p class="text-muted mb-0">Nhập mã tài khoản và Gmail để nhận mã xác thực</p>
+            </div>
+
+            <form asp-action="Register" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="alert alert-danger py-2 small" style="display:@(ViewData.ModelState.ErrorCount > 0 ? "block" : "none")"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Username" class="form-label fw-semibold"></label>
+                    <input asp-for="Username" class="form-control" placeholder="Ví dụ: GV001 hoặc 20230001" />
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Email" class="form-label fw-semibold"></label>
+                    <input asp-for="Email" class="form-control" placeholder="yourname@gmail.com" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-paper-plane me-2"></i>Gửi mã xác thực
+                </button>
+            </form>
+
+            <div class="text-center mt-4 d-flex justify-content-center gap-3">
+                <a asp-action="Login" class="text-decoration-none">Đăng nhập</a>
+                <a asp-action="ForgotPassword" class="text-decoration-none">Quên mật khẩu</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

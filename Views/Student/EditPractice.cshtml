@@ -1,0 +1,229 @@
+@model ExamSystem.Models.PracticeExam
+@{
+    ViewData["Title"] = "Chỉnh sửa đề luyện tập";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Practice" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-edit me-2 text-primary"></i>@Model.Title</h4>
+        <p class="text-muted mb-0">@Model.Questions.Count câu hỏi</p>
+    </div>
+    @if (Model.Questions.Any())
+    {
+        <a asp-controller="Exam" asp-action="TakePractice" asp-route-id="@Model.PracticeExamId"
+           class="btn btn-success ms-auto">
+            <i class="fas fa-play me-1"></i>Làm bài ngay
+        </a>
+    }
+</div>
+
+<div class="row g-3">
+    <!-- ADD QUESTION FORM -->
+    <div class="col-lg-5">
+        <div class="card sticky-top" style="top:80px">
+            <div class="card-header bg-white fw-semibold">
+                <i class="fas fa-plus-circle text-primary me-2"></i>Thêm câu hỏi mới
+            </div>
+            <div class="card-body">
+                <form asp-action="AddPracticeQuestion" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="practiceExamId" value="@Model.PracticeExamId" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nội dung câu hỏi</label>
+                        <textarea name="questionText" class="form-control form-control-sm" rows="3"
+                                  placeholder="Nhập câu hỏi..." required></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label small fw-semibold">Loại câu hỏi</label>
+                            <select name="questionType" class="form-select form-select-sm" id="practiceQType"
+                                    onchange="togglePracticeAnswers()">
+                                <option value="MultipleChoice">Trắc nghiệm</option>
+                                <option value="Essay">Tự luận</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label small fw-semibold">Điểm</label>
+                            <input name="points" type="number" class="form-control form-control-sm"
+                                   value="1" step="0.25" min="0.25" />
+                        </div>
+                    </div>
+
+                    <!-- Trắc nghiệm -->
+                    <div id="practiceAnswers">
+                        <label class="form-label small fw-semibold">Đáp án <span class="text-muted">(tick đáp án đúng)</span></label>
+                        @for (int i = 0; i < 4; i++)
+                        {
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="text-muted fw-bold" style="width:20px">@("ABCD"[i]).</span>
+                                <input type="text" name="answerTexts" class="form-control form-control-sm"
+                                       placeholder="Đáp án @("ABCD"[i])" />
+                                <div class="form-check mb-0">
+                                    <input type="checkbox" name="isCorrect" value="true"
+                                           class="form-check-input" id="pc_@i" />
+                                    <label class="form-check-label small text-success fw-semibold" for="pc_@i">Đúng</label>
+                                </div>
+                            </div>
+                        }
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Giải thích (không bắt buộc)</label>
+                            <input type="text" name="explanation" class="form-control form-control-sm"
+                                   placeholder="Giải thích đáp án..." />
+                        </div>
+                    </div>
+
+                    <!-- Tự luận -->
+                    <div id="essaySection" style="display:none">
+                        <label class="form-label small fw-semibold">Đáp án mẫu (để học sinh tham khảo sau khi nộp)</label>
+                        <textarea name="explanation" class="form-control form-control-sm" rows="3"
+                                  placeholder="Nhập đáp án mẫu hoặc gợi ý..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 mt-3">
+                        <i class="fas fa-plus me-1"></i>Thêm câu hỏi
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTION LIST -->
+    <div class="col-lg-7">
+        @if (!Model.Questions.Any())
+        {
+            <div class="card">
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fas fa-question-circle fa-3x mb-3 opacity-25"></i>
+                    <p>Chưa có câu hỏi nào. Thêm câu hỏi đầu tiên!</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var (q, i) in Model.Questions.OrderBy(q => q.OrderIndex).Select((q, i) => (q, i)))
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <!-- VIEW MODE -->
+                        <div id="view-@q.PracticeQuestionId">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 me-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="fw-semibold text-muted small">Câu @(i+1)</span>
+                                        <span class="badge @(q.QuestionType == "Essay" ? "bg-warning text-dark" : "bg-primary") small">
+                                            @(q.QuestionType == "Essay" ? "Tự luận" : "Trắc nghiệm")
+                                        </span>
+                                        <span class="text-muted small">@q.Points điểm</span>
+                                    </div>
+                                    <p class="mb-2 fw-semibold">@q.QuestionText</p>
+                                    @if (q.Answers.Any())
+                                    {
+                                        <div class="small mb-1">
+                                            @foreach (var a in q.Answers.OrderBy(a => a.OrderIndex))
+                                            {
+                                                <div class="@(a.IsCorrect ? "text-success fw-semibold" : "text-muted")">
+                                                    @(a.IsCorrect ? "✅" : "○") @a.AnswerText
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(q.Explanation))
+                                    {
+                                        <div class="small mt-1 text-info">
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            @(q.QuestionType == "Essay" ? "Đáp án mẫu: " : "Giải thích: ")@q.Explanation
+                                        </div>
+                                    }
+                                </div>
+                                <div class="d-flex gap-1 flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            onclick="toggleEdit(@q.PracticeQuestionId)" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form asp-action="DeletePracticeQuestion" method="post"
+                                          onsubmit="return confirm('Xóa câu hỏi này?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@q.PracticeQuestionId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT MODE -->
+                        <div id="edit-@q.PracticeQuestionId" style="display:none">
+                            <form asp-action="UpdatePracticeQuestion" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@q.PracticeQuestionId" />
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Nội dung câu hỏi</label>
+                                    <textarea name="questionText" class="form-control form-control-sm" rows="2" required>@q.QuestionText</textarea>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Điểm</label>
+                                        <input name="points" type="number" class="form-control form-control-sm"
+                                               value="@q.Points" step="0.25" min="0.25" />
+                                    </div>
+                                </div>
+                                @if (q.QuestionType == "MultipleChoice")
+                                {
+                                    <label class="form-label small fw-semibold">Đáp án</label>
+                                    @foreach (var (a, ai) in q.Answers.OrderBy(a => a.OrderIndex).Select((a, ai) => (a, ai)))
+                                    {
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="text-muted" style="width:20px">@("ABCD"[ai]).</span>
+                                            <input type="text" name="answerTexts" class="form-control form-control-sm" value="@a.AnswerText" />
+                                            <div class="form-check mb-0">
+                                                <input type="checkbox" name="isCorrect" value="true"
+                                                       class="form-check-input" @(a.IsCorrect ? "checked" : "") />
+                                                <label class="form-check-label small text-success fw-semibold">Đúng</label>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                <div class="mb-2 mt-2">
+                                    <label class="form-label small fw-semibold">
+                                        @(q.QuestionType == "Essay" ? "Đáp án mẫu" : "Giải thích")
+                                    </label>
+                                    <textarea name="explanation" class="form-control form-control-sm" rows="2">@q.Explanation</textarea>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-save me-1"></i>Lưu
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            onclick="toggleEdit(@q.PracticeQuestionId)">Hủy</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePracticeAnswers() {
+            const type = document.getElementById('practiceQType').value;
+            document.getElementById('practiceAnswers').style.display = type === 'MultipleChoice' ? 'block' : 'none';
+            document.getElementById('essaySection').style.display = type === 'Essay' ? 'block' : 'none';
+        }
+        function toggleEdit(id) {
+            const view = document.getElementById('view-' + id);
+            const edit = document.getElementById('edit-' + id);
+            view.style.display = view.style.display === 'none' ? 'block' : 'none';
+            edit.style.display = edit.style.display === 'none' ? 'block' : 'none';
+        }
+        togglePracticeAnswers();
+    </script>
+}

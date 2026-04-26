@@ -1,0 +1,102 @@
+@model IEnumerable<ExamSystem.Models.ExamSubmission>
+@{
+    ViewData["Title"] = "Danh sách bài nộp";
+    var exam = (ExamSystem.Models.Exam)ViewBag.Exam;
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="EditExam" asp-route-id="@exam.ExamId" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-inbox me-2 text-primary"></i>Bài nộp</h4>
+        <p class="text-muted mb-0">@exam.Title — @Model.Count() bài nộp</p>
+    </div>
+    <a asp-action="Statistics" asp-route-examId="@exam.ExamId" class="btn btn-sm btn-outline-info ms-auto">
+        <i class="fas fa-chart-bar me-1"></i>Xem thống kê
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+            <p>Chưa có sinh viên nào nộp bài.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sinh viên</th>
+                            <th>Lớp</th>
+                            <th>Thời gian nộp</th>
+                            <th class="text-center">Điểm</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sub in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@sub.Student.User.FullName</div>
+                                    <small class="text-muted">@sub.Student.StudentCode</small>
+                                </td>
+                                <td class="small text-muted">@sub.Student.ClassName</td>
+                                <td class="small text-muted">
+                                    @(sub.SubmittedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                    @if (sub.IsAutoSubmit)
+                                    {
+                                        <span class="badge bg-warning text-dark ms-1">Tự động</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (sub.TotalScore.HasValue)
+                                    {
+                                        <span class="fw-bold @(sub.TotalScore >= 5 ? "text-success" : "text-danger")">
+                                            @sub.TotalScore.Value.ToString("F1")
+                                        </span>
+                                        <small class="text-muted">/@exam.MaxScore</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (sub.Status == "Graded")
+                                    {
+                                        <span class="badge bg-success">Đã chấm</span>
+                                    }
+                                    else if (sub.Status == "Submitted")
+                                    {
+                                        <span class="badge bg-warning text-dark">Chờ chấm</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Đang làm</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="GradeSubmission" asp-route-id="@sub.SubmissionId"
+                                       class="btn btn-sm @(sub.Status == "Submitted" ? "btn-warning" : "btn-outline-primary")">
+                                        <i class="fas @(sub.Status == "Submitted" ? "fa-pen" : "fa-eye") me-1"></i>
+                                        @(sub.Status == "Submitted" ? "Chấm bài" : "Xem bài")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

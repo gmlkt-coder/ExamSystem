@@ -1,0 +1,166 @@
+@model ExamSystem.ViewModels.ExamResultViewModel
+@{
+    ViewData["Title"] = "Kết quả bài thi";
+    var pct = Model.MaxScore > 0 ? (double)(Model.TotalScore ?? 0) / (double)Model.MaxScore * 100 : 0;
+    var grade = pct >= 90 ? "Xuất sắc" : pct >= 80 ? "Giỏi" : pct >= 70 ? "Khá" : pct >= 50 ? "Trung bình" : "Yếu";
+    var gradeColor = pct >= 80 ? "success" : pct >= 60 ? "primary" : pct >= 50 ? "warning" : "danger";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-controller="Student" asp-action="History" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+    <div>
+        <h4 class="fw-bold mb-1">Kết quả bài thi</h4>
+        <p class="text-muted mb-0">@Model.ExamTitle</p>
+    </div>
+</div>
+
+<!-- SCORE CARD -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center p-4">
+            <div class="mb-3">
+                <div style="width:120px;height:120px;border-radius:50%;border:8px solid var(--bs-@gradeColor);
+                            display:flex;align-items:center;justify-content:center;margin:0 auto;
+                            background:var(--bs-@(gradeColor)-bg,#f8f9fa)">
+                    <div>
+                        <div style="font-size:2rem;font-weight:800;color:var(--bs-@gradeColor)">
+                            @Model.TotalScore?.ToString("F1")
+                        </div>
+                        <div class="small text-muted">/ @Model.MaxScore</div>
+                    </div>
+                </div>
+            </div>
+            <span class="badge bg-@gradeColor fs-6 mb-2">@grade</span>
+            <div class="text-muted small">
+                @Model.CorrectCount / @Model.TotalQuestions câu đúng
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card h-100 p-3">
+            <h6 class="fw-semibold mb-3">Thông tin bài thi</h6>
+            <table class="table table-sm table-borderless">
+                <tr>
+                    <td class="text-muted" style="width:140px">Môn học</td>
+                    <td><strong>@(Model.Subject ?? "—")</strong></td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Thời gian nộp</td>
+                    <td><strong>@Model.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")</strong></td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Trạng thái</td>
+                    <td>
+                        @if (Model.Status == "Graded")
+                        {
+                            <span class="badge bg-success">Đã chấm</span>
+                        }
+                        else if (Model.Status == "Submitted")
+                        {
+                            <span class="badge bg-warning text-dark">Chờ chấm</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">@Model.Status</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted">Điểm số</td>
+                    <td>
+                        <strong class="text-@gradeColor fs-5">
+                            @(Model.TotalScore.HasValue ? Model.TotalScore.Value.ToString("F2") : "—")
+                        </strong>
+                        / @Model.MaxScore
+                    </td>
+                </tr>
+            </table>
+
+            @if (!string.IsNullOrEmpty(Model.TeacherComment))
+            {
+                <div class="alert alert-info mt-2 mb-0">
+                    <i class="fas fa-comment-dots me-2"></i>
+                    <strong>Nhận xét của giáo viên:</strong>
+                    <p class="mb-0 mt-1">@Model.TeacherComment</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- REVIEW ANSWERS -->
+@if (Model.AllowReview && Model.Questions.Any())
+{
+    <div class="card">
+        <div class="card-header bg-white">
+            <h6 class="fw-semibold mb-0"><i class="fas fa-eye me-2 text-primary"></i>Xem lại đáp án</h6>
+        </div>
+        <div class="card-body">
+            @foreach (var (q, i) in Model.Questions.Select((q, i) => (q, i)))
+            {
+                var isRight = q.IsCorrect == true;
+                <div class="mb-4 p-3 border rounded @(q.QuestionType != "Essay" ? (isRight ? "border-success bg-light" : "border-danger bg-light") : "border-warning bg-light")">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="fw-semibold">Câu @(i+1).</span>
+                        @if (q.QuestionType != "Essay")
+                        {
+                            if (isRight)
+                            {
+                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Đúng</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Sai</span>
+                            }
+                        }
+                        <span class="text-muted small">(@q.ScoreEarned / @q.Points điểm)</span>
+                    </div>
+                    <p class="mb-2">@q.QuestionText</p>
+
+                    @if (q.QuestionType == "Essay")
+                    {
+                        <div class="bg-white p-2 rounded border">
+                            <small class="text-muted">Câu trả lời của bạn:</small>
+                            <p class="mb-0">@(q.EssayAnswer ?? "(Không có câu trả lời)")</p>
+                        </div>
+                    }
+                    else
+                    {
+                        foreach (var a in q.Answers)
+                        {
+                            var isSelected = q.SelectedAnswerId == a.AnswerId;
+                            var cls = a.IsCorrect ? "correct" : (isSelected && !a.IsCorrect ? "wrong" : "");
+                            <div class="answer-option @cls mb-1 p-2 rounded border @(a.IsCorrect ? "border-success" : isSelected ? "border-danger" : "border-light")">
+                                @if (a.IsCorrect) { <i class="fas fa-check text-success me-2"></i> }
+                                else if (isSelected) { <i class="fas fa-times text-danger me-2"></i> }
+                                else { <i class="fas fa-circle text-muted me-2" style="font-size:.4rem;vertical-align:middle"></i> }
+                                @a.AnswerText
+                            </div>
+                        }
+                    }
+
+                    @if (!string.IsNullOrEmpty(q.Explanation))
+                    {
+                        <div class="alert alert-light border mt-2 mb-0 py-2 small">
+                            <i class="fas fa-lightbulb text-warning me-2"></i><strong>Giải thích:</strong> @q.Explanation
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (!Model.AllowReview && Model.Status == "Graded")
+{
+    <div class="alert alert-secondary">
+        <i class="fas fa-eye-slash me-2"></i>Giáo viên không cho phép xem lại đáp án.
+    </div>
+}
+else if (Model.Status != "Graded")
+{
+    <div class="alert alert-warning">
+        <i class="fas fa-clock me-2"></i>Bài thi đang chờ chấm bởi giáo viên. Kết quả sẽ hiển thị sau khi chấm xong.
+    </div>
+}
